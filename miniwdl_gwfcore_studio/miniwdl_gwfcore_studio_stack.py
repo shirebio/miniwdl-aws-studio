@@ -8,7 +8,7 @@ from aws_cdk import (
     cloudformation_include as cdk_cfn_inc,
     aws_ec2 as cdk_ec2,
     aws_iam as cdk_iam,
-    aws_efs as cdk_efs,
+    aws_fsx as cdk_fsx,
 )
 
 
@@ -19,9 +19,9 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
         construct_id: str,
         *,
         vpc_id: str,
-        studio_efs_id: str,
-        studio_efs_uids: List[str],
-        studio_efs_sg_id: str,
+        studio_fsx_id: str,
+        studio_fsx_uids: List[str],
+        studio_fsx_sg_id: str,
         gwfcore_version: str = "latest",
         env,
         **kwargs,
@@ -37,31 +37,31 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
         subnet_ids = vpc.select_subnets(subnet_type=cdk_ec2.SubnetType.PUBLIC).subnet_ids
 
         # Deploy gwfcore sub-stacks
-        batch_sg = self._gwfcore(gwfcore_version, vpc_id, subnet_ids, studio_efs_id, env)
+        batch_sg = self._gwfcore(gwfcore_version, vpc_id, subnet_ids, studio_fsx_id, env)
 
         # Modify Studio EFS security group to allow access from gwfcore's Batch compute environment
-        studio_efs_sg = cdk_ec2.SecurityGroup.from_security_group_id(
-            self, "StudioEFSSecurityGroup", studio_efs_sg_id
+        studio_fsx_sg = cdk_ec2.SecurityGroup.from_security_group_id(
+            self, "StudioEFSSecurityGroup", studio_fsx_sg_id
         )
-        studio_efs_sg.add_ingress_rule(batch_sg, cdk_ec2.Port.tcp(2049))
+        studio_fsx_sg.add_ingress_rule(batch_sg, cdk_ec2.Port.tcp(2049))
 
         # Add EFS Access Point to help Batch jobs "see" the user's EFS directory in the same way
         # SageMaker Studio presents it. Inside Studio, miniwdl-aws can detect this by filtering
         # access points for the correct EFS ID, uid, and path.
-        studio_efs = cdk_efs.FileSystem.from_file_system_attributes(
+        studio_fsx = cdk_fsx.FileSystem.from_file_system_attributes(
             self,
-            "StudioEFS",
-            file_system_id=studio_efs_id,
-            security_group=studio_efs_sg,
+            "StudioFSX",
+            file_system_id=studio_fsx_id,
+            security_group=studio_fsx_sg,
         )
-        for uid in studio_efs_uids:
-            cdk_efs.AccessPoint(
-                self,
-                f"StudioFSAPuid{uid}x",
-                file_system=studio_efs,
-                posix_user=cdk_efs.PosixUser(uid=uid, gid=uid),
-                path=f"/{uid}",
-            )
+        # for uid in studio_fsx_uids:
+        #     cdk_efs.AccessPoint(
+        #         self,
+        #         f"StudioFSAPuid{uid}x",
+        #         file_system=studio_efs,
+        #         posix_user=cdk_efs.PosixUser(uid=uid, gid=uid),
+        #         path=f"/{uid}",
+        #     )
 
     def __del__(self):
         # clean up temp dir
@@ -71,7 +71,7 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
             except:
                 pass
 
-    def _gwfcore(self, version, vpc_id, subnet_ids, studio_efs_id, env):
+    def _gwfcore(self, version, vpc_id, subnet_ids, studio_fsx_id, env):
         # Import gwfcore CloudFormation templates from the aws-genomics-workflows S3 bucket
         s3 = boto3.client("s3", region_name="us-east-1")
 
@@ -120,7 +120,7 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
         # Set a tag on the batch queue to help miniwdl-aws identify it as the default
         gwfcore_batch_template = cfn_gwfcore.get_nested_stack("BatchStack").included_template
         cdk.Tags.of(gwfcore_batch_template.get_resource("DefaultQueue")).add(
-            "MiniwdlStudioEfsId", studio_efs_id
+            "MiniwdlStudioEfsId", studio_fsx_id
         )
 
         batch_sg = cdk_ec2.SecurityGroup.from_security_group_id(
