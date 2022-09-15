@@ -57,18 +57,18 @@ sg_desc = ec2.describe_security_groups(
 assert (
     len(sg_desc.get("SecurityGroups", [])) == 1
 ), f"Failed to look up SageMaker Studio EFS security group named 'security-group-for-inbound-nfs-{studio_domain_id}'"
-studio_efs_sg_id = sg_desc["SecurityGroups"][0]["GroupId"]
+studio_fsx_sg_id = sg_desc["SecurityGroups"][0]["GroupId"]
 
 # Log the detected details
 print(f"studio_domain_id = {studio_domain_id}")
 print(f"studio_user_profile_name = {','.join(studio_user_profile_names)}")
 detected = dict(
     vpc_id=domain_desc["VpcId"],
-    studio_efs_id=domain_desc["HomeEfsFileSystemId"],
-    studio_efs_uids=list(
-        set(user_profile_desc[nm]["HomeEfsFileSystemUid"] for nm in user_profile_desc)
+    studio_fsx_id=domain_desc["HomeFsxFileSystemId"],
+    studio_fsx_uids=list(
+        set(user_profile_desc[nm]["HomeFsxFileSystemUid"] for nm in user_profile_desc)
     ),
-    studio_efs_sg_id=studio_efs_sg_id,
+    studio_fsx_sg_id=studio_fsx_sg_id,
 )
 for k, v in detected.items():
     print(f"{k} = {v}")
