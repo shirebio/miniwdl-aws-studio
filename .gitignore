@@ -11,3 +11,5 @@ RELEASE-VERSION
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+Session.vim
