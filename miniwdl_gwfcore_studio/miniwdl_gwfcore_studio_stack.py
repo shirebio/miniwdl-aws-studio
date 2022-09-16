@@ -119,6 +119,7 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
         )
 
         # Set a tag on the batch queue to help miniwdl-aws identify it as the default
+        # !!!!!!!!!!!!!!!!! maybe just do this manually idk
         gwfcore_batch_template = cfn_gwfcore.get_nested_stack("BatchStack").included_template
         cdk.Tags.of(gwfcore_batch_template.get_resource("DefaultQueue")).add(
             "MiniwdlStudioEfsId", studio_fsx_id
