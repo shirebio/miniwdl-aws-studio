@@ -10,6 +10,7 @@ if ! [ -f '/opt/ml/metadata/resource-metadata.json' ]; then
     exit 1
 fi
 
+# TODO: replace these with my forks
 pip3 install --upgrade miniwdl miniwdl-aws
 curl -Ls https://github.com/miniwdl-ext/miniwdl-aws-studio/raw/main/miniwdl_aws_studio.cfg > ~/.config/miniwdl.cfg
 miniwdl run_self_test --dir ~/miniwdl/self_test

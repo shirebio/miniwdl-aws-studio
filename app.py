@@ -43,35 +43,49 @@ user_profile_desc = dict(
     for nm in studio_user_profile_names
 )
 
-# Find the Studio EFS' security group, named "security-group-for-inbound-nfs-{studio_domain_id}"
-# Nice-to-have: describe Studio EFS' mount targets to double-check they're in this security group.
-ec2 = boto3.client("ec2", **client_opts)
-sg_desc = ec2.describe_security_groups(
-    Filters=[
-        dict(
-            Name="group-name",
-            Values=[f"security-group-for-inbound-nfs-{studio_domain_id}"],
-        )
-    ]
-)
-assert (
-    len(sg_desc.get("SecurityGroups", [])) == 1
-), f"Failed to look up SageMaker Studio EFS security group named 'security-group-for-inbound-nfs-{studio_domain_id}'"
-studio_fsx_sg_id = sg_desc["SecurityGroups"][0]["GroupId"]
+#
+# Get sst's ssm params
+#
+
+ssm = boto3.client("ssm", **client_opts)
+stage = ssm.get_parameter(Name="/sst/shire-app/stage")["Parameter"]["Value"]
+studio_fsx_id = ssm.get_parameter(Name=f"/sst/shire-app/{stage}/STUDIO_FSX_ID")["Parameter"]["Value"]
+studio_fsx_sg_id = ssm.get_parameter(Name=f"/sst/shire-app/{stage}/FSX_SG_ID")["Parameter"]["Value"]
+batch_sg_id = ssm.get_parameter(Name=f"/sst/shire-app/{stage}/BATCH_SG_ID")["Parameter"]["Value"]
+
+# ec2 = boto3.client("ec2", **client_opts)
+# sg_desc = ec2.describe_security_groups(
+#     Filters=[
+#         dict(
+#             Name="group-name",
+#             Values=[f"security-group-for-inbound-nfs-{studio_domain_id}"],
+#         )
+#     ]
+# )
+# assert (
+#     len(sg_desc.get("SecurityGroups", [])) == 1
+# ), f"Failed to look up SageMaker Studio FSx security group named 'security-group-for-inbound-nfs-{studio_domain_id}'"
+# studio_fsx_sg_id = sg_desc["SecurityGroups"][0]["GroupId"]
 
 # Log the detected details
 print(f"studio_domain_id = {studio_domain_id}")
 print(f"studio_user_profile_name = {','.join(studio_user_profile_names)}")
-detected = dict(
-    vpc_id=domain_desc["VpcId"],
-    studio_fsx_id=domain_desc["HomeFsxFileSystemId"],
-    studio_fsx_uids=list(
-        set(user_profile_desc[nm]["HomeFsxFileSystemUid"] for nm in user_profile_desc)
-    ),
-    studio_fsx_sg_id=studio_fsx_sg_id,
-)
-for k, v in detected.items():
-    print(f"{k} = {v}")
+print(f"studio_fsx_id = {studio_fsx_id}")
+print(f"studio_fsx_sg_id = {studio_fsx_sg_id}")
+print(f"vpc_id = {domain_desc['VpcId']}")
+print(f"batch_sg_id = {batch_sg_id}")
+# probably don't need uids?
+
+# detected = dict(
+    # vpc_id=domain_desc["VpcId"],
+    # studio_fsx_id=domain_desc["HomeFsxFileSystemId"],
+    # studio_fsx_uids=list(
+        # set(user_profile_desc[nm]["HomeFsxFileSystemUid"] for nm in user_profile_desc)
+    # ),
+    # studio_fsx_sg_id=studio_fsx_sg_id,
+# )
+# for k, v in detected.items():
+#     print(f"{k} = {v}")
 
 # Add necessary policies to the Studio ExecutionRole. We don't do this through CDK because of:
 #   https://github.com/aws/aws-cdk/blob/486f2e5518ab5abb69a3e3986e4f3581aa42d15b/packages/%40aws-cdk/aws-iam/lib/role.ts#L225-L227
@@ -111,7 +125,11 @@ MiniwdlGwfcoreStudioStack(
     "MiniwdlGwfcoreStudioStack",
     # gwfcore_version=gwfcore_version,
     env=env,
-    **detected,
+    studio_fsx_id=studio_fsx_id,
+    studio_fsx_sg_id=studio_fsx_sg_id,
+    vpc_id=domain_desc["VpcId"],
+    batch_sg_id=batch_sg_id,
+    # **detected,
 )
 
 app.synth()
