@@ -76,62 +76,62 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
             except:
                 pass
 
-    def _gwfcore(self, version, vpc_id, subnet_ids, studio_fsx_id, env):
-        # Import gwfcore CloudFormation templates from the aws-genomics-workflows S3 bucket
-        s3 = boto3.client("s3", region_name="us-east-1")
+    # def _gwfcore(self, version, vpc_id, subnet_ids, studio_fsx_id, env):
+    #     # Import gwfcore CloudFormation templates from the aws-genomics-workflows S3 bucket
+    #     s3 = boto3.client("s3", region_name="us-east-1")
 
-        def _template(basename):
-            # CfnInclude needs a local filename, so download template to temp dir
-            tfn = os.path.join(self._tmpdir, basename)
-            s3.download_file(
-                "aws-genomics-workflows", f"{version}/templates/gwfcore/{basename}", tfn
-            )
-            return tfn
+    #     def _template(basename):
+    #         # CfnInclude needs a local filename, so download template to temp dir
+    #         tfn = os.path.join(self._tmpdir, basename)
+    #         s3.download_file(
+    #             "aws-genomics-workflows", f"{version}/templates/gwfcore/{basename}", tfn
+    #         )
+    #         return tfn
 
-        cfn_gwfcore = cdk_cfn_inc.CfnInclude(
-            self,
-            "gwfcore",
-            template_file=_template("gwfcore-root.template.yaml"),
-            load_nested_stacks=dict(
-                (s, {"templateFile": _template(fn)})
-                for (s, fn) in (
-                    ("BatchStack", "gwfcore-batch.template.yaml"),
-                    ("S3Stack", "gwfcore-s3.template.yaml"),
-                    ("IamStack", "gwfcore-iam.template.yaml"),
-                    ("CodeStack", "gwfcore-code.template.yaml"),
-                    ("LaunchTplStack", "gwfcore-launch-template.template.yaml"),
-                )
-            ),
-            parameters={
-                "VpcId": vpc_id,
-                "SubnetIds": subnet_ids,
-                "NumberOfSubnets": len(subnet_ids),
-                "S3BucketName": f"minwidl-gwfcore-studio-{env['account']}-{env['region']}",
-                "BatchComputeInstanceTypes": "m5,m5n,c5,c5n,r5,r5n,r5b",
-            },
-        )
+    #     cfn_gwfcore = cdk_cfn_inc.CfnInclude(
+    #         self,
+    #         "gwfcore",
+    #         template_file=_template("gwfcore-root.template.yaml"),
+    #         load_nested_stacks=dict(
+    #             (s, {"templateFile": _template(fn)})
+    #             for (s, fn) in (
+    #                 ("BatchStack", "gwfcore-batch.template.yaml"),
+    #                 ("S3Stack", "gwfcore-s3.template.yaml"),
+    #                 ("IamStack", "gwfcore-iam.template.yaml"),
+    #                 ("CodeStack", "gwfcore-code.template.yaml"),
+    #                 ("LaunchTplStack", "gwfcore-launch-template.template.yaml"),
+    #             )
+    #         ),
+    #         parameters={
+    #             "VpcId": vpc_id,
+    #             "SubnetIds": subnet_ids,
+    #             "NumberOfSubnets": len(subnet_ids),
+    #             "S3BucketName": f"minwidl-gwfcore-studio-{env['account']}-{env['region']}",
+    #             "BatchComputeInstanceTypes": "m5,m5n,c5,c5n,r5,r5n,r5b",
+    #         },
+    #     )
 
-        # Add EFS client access policy to the Batch instance role
-        included_gwfcore_iam_stack = cfn_gwfcore.get_nested_stack("IamStack")
-        gwfcore_iam_template = included_gwfcore_iam_stack.included_template
-        gwfcore_batch_instance_role = gwfcore_iam_template.get_resource("BatchInstanceRole")
-        assert isinstance(gwfcore_batch_instance_role, cdk_iam.CfnRole)
-        gwfcore_batch_instance_role.managed_policy_arns.append(
-            cdk_iam.ManagedPolicy.from_aws_managed_policy_name(
-                "AmazonElasticFileSystemClientReadWriteAccess"
-            ).managed_policy_arn
-        )
+    #     # Add EFS client access policy to the Batch instance role
+    #     included_gwfcore_iam_stack = cfn_gwfcore.get_nested_stack("IamStack")
+    #     gwfcore_iam_template = included_gwfcore_iam_stack.included_template
+    #     gwfcore_batch_instance_role = gwfcore_iam_template.get_resource("BatchInstanceRole")
+    #     assert isinstance(gwfcore_batch_instance_role, cdk_iam.CfnRole)
+    #     gwfcore_batch_instance_role.managed_policy_arns.append(
+    #         cdk_iam.ManagedPolicy.from_aws_managed_policy_name(
+    #             "AmazonElasticFileSystemClientReadWriteAccess"
+    #         ).managed_policy_arn
+    #     )
 
-        # Set a tag on the batch queue to help miniwdl-aws identify it as the default
-        # !!!!!!!!!!!!!!!!! maybe just do this manually idk
-        # gwfcore_batch_template = cfn_gwfcore.get_nested_stack("BatchStack").included_template
-        # cdk.Tags.of(gwfcore_batch_template.get_resource("DefaultQueue")).add(
-        #     "MiniwdlStudioFsxId", studio_fsx_id
-        # )
+    #     # Set a tag on the batch queue to help miniwdl-aws identify it as the default
+    #     # !!!!!!!!!!!!!!!!! maybe just do this manually idk
+    #     # gwfcore_batch_template = cfn_gwfcore.get_nested_stack("BatchStack").included_template
+    #     # cdk.Tags.of(gwfcore_batch_template.get_resource("DefaultQueue")).add(
+    #     #     "MiniwdlStudioFsxId", studio_fsx_id
+    #     # )
 
-        batch_sg = cdk_ec2.SecurityGroup.from_security_group_id(
-            self,
-            "BatchSecurityGroup",
-            gwfcore_batch_template.get_resource("SecurityGroup").attr_group_id,
-        )
-        return batch_sg
+    #     batch_sg = cdk_ec2.SecurityGroup.from_security_group_id(
+    #         self,
+    #         "BatchSecurityGroup",
+    #         gwfcore_batch_template.get_resource("SecurityGroup").attr_group_id,
+    #     )
+    #     return batch_sg
