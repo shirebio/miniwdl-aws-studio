@@ -22,7 +22,7 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
         studio_fsx_id: str,
         studio_fsx_uids: List[str],
         studio_fsx_sg_id: str,
-        gwfcore_version: str = "latest",
+        # gwfcore_version: str = "latest",
         env,
         **kwargs,
     ) -> None:
@@ -37,7 +37,8 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
         subnet_ids = vpc.select_subnets(subnet_type=cdk_ec2.SubnetType.PUBLIC).subnet_ids
 
         # Deploy gwfcore sub-stacks
-        batch_sg = self._gwfcore(gwfcore_version, vpc_id, subnet_ids, studio_fsx_id, env)
+        # batch_sg = self._gwfcore(gwfcore_version, vpc_id, subnet_ids, studio_fsx_id, env)
+        !!!!!!make this actual sg
 
         # Modify Studio EFS security group to allow access from gwfcore's Batch compute environment
         studio_fsx_sg = cdk_ec2.SecurityGroup.from_security_group_id(
