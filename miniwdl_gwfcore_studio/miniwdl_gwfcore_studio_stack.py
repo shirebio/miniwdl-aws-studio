@@ -1,7 +1,7 @@
 import os
 import tempfile
 import boto3
-from typing import List
+# from typing import List
 from contextlib import ExitStack
 from aws_cdk import (
     core as cdk,
@@ -20,7 +20,7 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
         *,
         vpc_id: str,
         studio_fsx_id: str,
-        studio_fsx_uids: List[str],
+        # studio_fsx_uids: List[str],
         studio_fsx_sg_id: str,
         # gwfcore_version: str = "latest",
         env,
@@ -38,7 +38,7 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
 
         # Deploy gwfcore sub-stacks
         # batch_sg = self._gwfcore(gwfcore_version, vpc_id, subnet_ids, studio_fsx_id, env)
-        !!!!!!make this actual sg
+        # !!!!!!make this actual sg
 
         # Modify Studio EFS security group to allow access from gwfcore's Batch compute environment
         studio_fsx_sg = cdk_ec2.SecurityGroup.from_security_group_id(
@@ -49,12 +49,12 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
         # Add EFS Access Point to help Batch jobs "see" the user's EFS directory in the same way
         # SageMaker Studio presents it. Inside Studio, miniwdl-aws can detect this by filtering
         # access points for the correct EFS ID, uid, and path.
-        studio_fsx = cdk_fsx.FileSystem.from_file_system_attributes(
-            self,
-            "StudioFSX",
-            file_system_id=studio_fsx_id,
-            security_group=studio_fsx_sg,
-        )
+        # studio_fsx = cdk_fsx.FileSystem.from_file_system_attributes(
+        #     self,
+        #     "StudioFSX",
+        #     file_system_id=studio_fsx_id,
+        #     security_group=studio_fsx_sg,
+        # )
         # for uid in studio_fsx_uids:
         #     cdk_efs.AccessPoint(
         #         self,
@@ -120,10 +120,10 @@ class MiniwdlGwfcoreStudioStack(cdk.Stack):
 
         # Set a tag on the batch queue to help miniwdl-aws identify it as the default
         # !!!!!!!!!!!!!!!!! maybe just do this manually idk
-        gwfcore_batch_template = cfn_gwfcore.get_nested_stack("BatchStack").included_template
-        cdk.Tags.of(gwfcore_batch_template.get_resource("DefaultQueue")).add(
-            "MiniwdlStudioEfsId", studio_fsx_id
-        )
+        # gwfcore_batch_template = cfn_gwfcore.get_nested_stack("BatchStack").included_template
+        # cdk.Tags.of(gwfcore_batch_template.get_resource("DefaultQueue")).add(
+        #     "MiniwdlStudioFsxId", studio_fsx_id
+        # )
 
         batch_sg = cdk_ec2.SecurityGroup.from_security_group_id(
             self,
