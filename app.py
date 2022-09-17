@@ -49,9 +49,9 @@ user_profile_desc = dict(
 
 ssm = boto3.client("ssm", **client_opts)
 stage = ssm.get_parameter(Name="/sst/shire-app/stage")["Parameter"]["Value"]
-studio_fsx_id = ssm.get_parameter(Name="/sst/shire-app/"+stage+"/FSX_ID")["Parameter"]["Value"]
-studio_fsx_sg_id = ssm.get_parameter(Name=f"/sst/shire-app/{stage}/FSX_SG_ID")["Parameter"]["Value"]
-batch_sg_id = ssm.get_parameter(Name=f"/sst/shire-app/{stage}/BATCH_SECURITY_GROUP_ARN")["Parameter"]["Value"]
+studio_fsx_id = ssm.get_parameter(Name=f"/sst/shire-app/{stage}/parameters/FSX_ID")["Parameter"]["Value"]
+studio_fsx_sg_id = ssm.get_parameter(Name=f"/sst/shire-app/{stage}/parameters/FSX_SG_ID")["Parameter"]["Value"]
+batch_sg_id = ssm.get_parameter(Name=f"/sst/shire-app/{stage}/parameters/BATCH_SECURITY_GROUP_ARN")["Parameter"]["Value"]
 
 # ec2 = boto3.client("ec2", **client_opts)
 # sg_desc = ec2.describe_security_groups(
